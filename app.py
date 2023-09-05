@@ -14,6 +14,7 @@ from htmlTemplates import css, bot_template, user_template
 def handle_userinput(user_question):
     if st.session_state.conversation is None:
         return 
+    
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
     for i, message in enumerate(st.session_state.chat_history):
@@ -26,10 +27,14 @@ def main():
     load_dotenv()
     st.set_page_config(page_title="Chat with your courses", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
+
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
+        
+    vectorstore = get_vectorstore()
+    st.session_state.conversation = get_conversation_chain(vectorstore)
 
     st.header("同你的教材对话 :books:")
     user_question = st.text_input("现在你可以跟你的教材对话:")
@@ -45,13 +50,7 @@ def main():
                 raw_text = get_pdf_text(pdf_docs)
                 # get the text chunks
                 text_chunks = get_text_chunks(raw_text)
-                # Create vector store
-                vectorstore = get_vectorstore(text_chunks)
-                # create conversation chain
-                st.session_state.conversation = get_conversation_chain(vectorstore)
-        
-        
-
+                vectorstore.add_texts(text_chunks)
         
 if __name__ == '__main__':
     main()
